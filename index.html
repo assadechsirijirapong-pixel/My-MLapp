@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>AI Fish Classification - Full Stream</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500&display=swap" rel="stylesheet">
+
+<style>
+/* ===== AQUARIUM WORLD ===== */
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    font-family: 'Kanit', sans-serif;
+}
+
+body {
+    background: #001220; 
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* พื้นหลังลำธาร */
+.ocean-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -2;
+    background: linear-gradient(180deg, #021d33 0%, #000a12 100%);
+}
+
+/* เอฟเฟกต์แสงส่องใต้น้ำ */
+.sunlight {
+    position: fixed;
+    top: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% -20%, rgba(0, 255, 255, 0.15) 0%, transparent 50%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* สไตล์ตัวปลา */
+.fish {
+    position: fixed;
+    z-index: -1;
+    font-size: 2.5rem;
+    user-select: none;
+    pointer-events: none;
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
+}
+
+/* สไตล์ฟองอากาศ */
+.bubble {
+    position: fixed;
+    bottom: -50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    z-index: -1;
+    pointer-events: none;
+    animation: rise linear infinite;
+}
+
+@keyframes rise {
+    from { transform: translateY(0) translateX(0); }
+    to { transform: translateY(-110vh) translateX(20px); }
+}
+
+/* ===== MENU ===== */
+nav {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding: 25px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+}
+
+nav button {
+    padding: 12px 28px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+nav button.active {
+    background: #6ef3c5;
+    color: #001220;
+    box-shadow: 0 0 15px rgba(110, 243, 197, 0.4);
+}
+
+/* ===== CARD DESIGN ===== */
+.page {
+    display: none;
+    min-height: calc(100vh - 100px);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.page.active { display: flex; animation: fadeIn 0.8s ease; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.card {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 40px;
+    border-radius: 35px;
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+}
+
+/* ===== UPLOAD AREA ===== */
+.upload-btn {
+    display: inline-block;
+    background: linear-gradient(45deg, #b48cff, #6ef3c5);
+    color: #001220;
+    padding: 16px 40px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 20px;
+    transition: 0.3s;
+}
+
+.upload-btn:hover { transform: scale(1.05); }
+
+#preview-img {
+    max-width: 100%;
+    border-radius: 20px;
+    margin-top: 20px;
+    display: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.bad { color: #ff6b6b; font-weight: bold; }
+.good { color: #6ef3c5; font-weight: bold; }
+</style>
+</head>
+
+<body>
+
+<div class="ocean-bg"></div>
+<div class="sunlight"></div>
+
+<nav>
+    <button class="active" onclick="showPage('home', this)">หน้าแรก</button>
+    <button onclick="showPage('check', this)">ตรวจปลา</button>
+    <button onclick="showPage('about', this)">เกี่ยวกับเรา</button>
+</nav>
+
+<div id="home" class="page active">
+    <div class="card">
+        <h1 style="margin-bottom:15px;">🐟 AI Fish Guard</h1>
+        <p style="opacity: 0.9;">
+            ยินดีต้อนรับสู่ระบบตรวจจับสายพันธุ์ปลาในลำธาร <br>
+            ช่วยกันแยกแยะ <span class="good">ปลานิล</span> ออกจาก <span class="bad">ปลาหมอคางดำ</span> 
+            เพื่อรักษาสิ่งแวดล้อม
+        </p>
+    </div>
+</div>
+
+<div id="check" class="page">
+    <div class="card">
+        <h2>🔍 วิเคราะห์ชนิดปลา</h2>
+        <img id="preview-img" alt="preview">
+        <br>
+        <label class="upload-btn">
+            📷 อัปโหลดรูปภาพ
+            <input type="file" onchange="loadImage(event)" style="display:none;">
+        </label>
+        <div id="result" style="margin-top:20px; font-size: 1.2rem;">พร้อมใช้งาน ✅</div>
+    </div>
+</div>
+
+<div id="about" class="page">
+    <div class="card">
+        <h2>🌊 ภารกิจของเรา</h2><br>
+        <p>เราใช้พลังของ AI เพื่อช่วยให้ทุกคนสามารถระบุปลาที่รุกรานแหล่งน้ำได้อย่างแม่นยำและรวดเร็ว</p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<script>
+/* ===== ระบบฝูงปลาและฟองอากาศ (Full Stream) ===== */
+function initNature() {
+    const body = document.body;
+    const fishIcons = ['🐟', '🐠', '🐡', '🐟'];
+    
+    // สร้างปลา 15 ตัว
+    for(let i=0; i<15; i++) {
+        createElement('fish', fishIcons[Math.floor(Math.random()*fishIcons.length)]);
+    }
+    
+    // สร้างฟองอากาศ 20 อัน
+    for(let i=0; i<20; i++) {
+        createElement('bubble', '');
+    }
+}
+
+function createElement(type, content) {
+    const el = document.createElement('div');
+    el.className = type;
+    el.innerText = content;
+    
+    const size = type === 'fish' ? (Math.random()*20 + 20) + 'px' : (Math.random()*15 + 5) + 'px';
+    const duration = (Math.random()*20 + 10) + 's';
+    const delay = (Math.random()*-20) + 's';
+    const topPos = Math.random() * 90 + '%';
+    
+    el.style.fontSize = size;
+    if(type === 'bubble') {
+        el.style.width = size;
+        el.style.height = size;
+        el.style.left = Math.random() * 100 + '%';
+        el.style.animationDuration = (Math.random()*5 + 5) + 's';
+    } else {
+        el.style.top = topPos;
+        el.style.left = '-100px';
+        el.style.animation = `swimFull ${duration} ${delay} linear infinite`;
+        el.style.opacity = Math.random() * 0.5 + 0.2;
+    }
+    
+    document.body.appendChild(el);
+}
+
+// CSS Animation สำหรับปลาว่ายข้ามจอ
+const style = document.createElement('style');
+style.innerHTML = `
+    @keyframes swimFull {
+        0% { transform: translateX(-10vw) scaleX(1); }
+        49% { transform: translateX(110vw) scaleX(1); }
+        50% { transform: translateX(110vw) scaleX(-1); }
+        99% { transform: translateX(-10vw) scaleX(-1); }
+        100% { transform: translateX(-10vw) scaleX(1); }
+    }
+`;
+document.head.appendChild(style);
+initNature();
+
+/* ===== AI LOGIC ===== */
+function showPage(pageId, btn){
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    btn.classList.add('active');
+}
+
+const URL = "https://teachablemachine.withgoogle.com/models/_VYguQKmR/";
+let model = null;
+
+(async function(){
+    model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+})();
+
+function loadImage(event){
+    if(!model) return;
+    const file = event.target.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const img = document.getElementById('preview-img');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        img.onload = () => predict(img);
+    };
+    reader.readAsDataURL(file);
+}
+
+async function predict(imageElement){
+    const prediction = await model.predict(imageElement);
+    let best = prediction[0];
+    for(let i = 1; i < prediction.length; i++){
+        if(prediction[i].probability > best.probability) best = prediction[i];
+    }
+
+    let isBad = best.className.includes("คางดำ");
+    document.getElementById("result").innerHTML = `
+        <div class="${isBad ? 'bad' : 'good'}">
+            <h3>ผลลัพธ์: ${best.className}</h3>
+            แม่นยำ: ${(best.probability * 100).toFixed(2)}%
+        </div>`;
+}
+</script>
+
+</body>
+</html>
